@@ -36,3 +36,25 @@ digraph {
 			a -> b
 }
 ```
+
+### `graph:render(filename, format)`
+write dot file to (`filename`), and compile the dot file as `format`
+
+```lua
+graph:render("file", "pdf")
+```
+
+### `graph.nodes.style:update(styles)`, `graph.edges.style:update(styles`, `graph.graph.style:update(styles)`
+
+update each style
+
+```lua
+graph.nodes.style:update{
+	fontname = "Inconsolata Regular",
+	shape = "rectangle"
+}
+```
+
+## LICENSE
+[MIT](https://github.com/nymphium/lua-graphviz/tree/master/LICENSE)
+

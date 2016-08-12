@@ -1,6 +1,6 @@
 local __Graph = {
 	node = function(self,nodename, label)
-		self.nodes.node[nodename] = label
+		table.insert(self.nodes.node, {node =nodename, label = label})
 	end,
 
 	edge = function(self, ...)
@@ -20,8 +20,9 @@ local __Graph = {
 		node_style = self.nodes.style
 		self.nodes.style = nil
 
-		for k, v in pairs(self.nodes.node) do
-			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(k, v)
+		for i = 1, #self.nodes.node do
+			local n = self.nodes.node[i]
+			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(n.node, n.label)
 		end
 
 		self.nodes.style = node_style

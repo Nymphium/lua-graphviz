@@ -1,16 +1,3 @@
-local function style_expand(tbl)
-	local style_str = ""
-
-	for k, v in pairs(tbl) do
-		if k == "fontname" then
-			v = ([["%s"]]):format(v)
-		end
-		style_str = style_str .. (" %s=%s"):format(k, v)
-	end
-
-	return style_str:gsub("^ ", "")
-end
-
 local __Graph = {
 	node = function(self,nodename, label)
 		self.nodes.node[nodename] = label
@@ -26,9 +13,9 @@ local __Graph = {
 
 	source = function(self)
 		local src = "digraph {\n" ..
-			"\tgraph [" .. style_expand(self.graph.style) .. "]\n" ..
-			"\tnode [" .. style_expand(self.nodes.style) .. "]\n" ..
-			"\tedge [" .. style_expand(self.edges.style) .. "]\n"
+			"\tgraph [" .. self.graph.style:expand() .. "]\n" ..
+			"\tnode [" .. self.nodes.style:expand() .. "]\n" ..
+			"\tedge [" .. self.edges.style:expand() .. "]\n"
 
 		node_style = self.nodes.style
 		self.nodes.style = nil
@@ -84,23 +71,38 @@ local __Graph = {
 	end,
 }
 
-local update = function(orig_style, styles)
-	for k, v in pairs(styles) do
-		orig_style[k] = v
+local style_index = {
+	update = function(orig_style, styles)
+		for k, v in pairs(styles) do
+			orig_style[k] = v
+		end
+	end,
+
+	expand = function(tbl)
+		local style_str = ""
+
+		for k, v in pairs(tbl) do
+			if k == "fontname" then
+				v = ([["%s"]]):format(v)
+			end
+			style_str = style_str .. (" %s=%s"):format(k, v)
+		end
+
+		return style_str:gsub("^ ", "")
 	end
-end
+}
 
 -- pseudo Graph class
 local Graph = function()
 	return setmetatable({
 		 edges = {
 			 edge = {},
-			 style = setmetatable({}, {__index = {update = update}})},
+			 style = setmetatable({}, {__index = style_index})},
 		nodes = {
 			node = {},
-			style = setmetatable({}, {__index = {update = update}})},
+			style = setmetatable({}, {__index = style_index})},
 		graph = {
-			style = setmetatable({}, {__index = {update = update}})},
+			style = setmetatable({}, {__index = style_index})},
 	}, {__index = __Graph})
 end
 

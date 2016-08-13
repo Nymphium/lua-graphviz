@@ -1,8 +1,7 @@
 package = "graphviz"
 version = "v1.0-1"
 source = {
-	url = "git://github.com/nymphium/lua-graphviz",
-	tag = "vv1.0"
+	url = "git://github.com/nymphium/lua-graphviz"
 }
 description = {
 	homepage = "http://github.com/nymphium/lua-graphviz",

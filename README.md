@@ -9,6 +9,10 @@ local Graphviz = require("graphviz")
 
 local graph = Graphviz()
 ```
+
+## install
+`luarocks install graphviz` or `git clone https://github.com/nymphium/lua-graphviz && cd lua-graphviz && luarocks make`
+
 ## function
 ### `graph:node(nodename, label)`
 add a node
@@ -29,16 +33,24 @@ return graph as string
 ```
 digraph {
 	graph []
-	node[]
-	edge[]
+	node []
+	edge []
 		a [label="hoge"]
 		b [label="huga"]
 			a -> b
 }
 ```
 
-### `graph:render(filename, format)`
-write dot file to (`filename`), and compile the dot file as `format`
+### `graph:write(filename)`
+write dot file to (`filename`)
+
+### `graph:compile(filename, format = "pdf", generated_filename = ("%s.%s"):format(filename, format))`
+write dot file to (`filename`) and compile the file (`dot -T format filename generated_filename`)
+
+### `graph:render(filename, format = "pdf", generated_filename = ("%s.%s"):format(filename,  format))`
+write dot file to (`filename`), compile the dot file as `format`, and open the generated file
+
+it only calls `graph:write(filename)`, `graph:compile(filename, format, generated_file)` and `io.pcall(()"xdg-open %s &"):format(generated_filename))`
 
 ```lua
 graph:render("file", "pdf")
@@ -57,4 +69,3 @@ graph.nodes.style:update{
 
 ## LICENSE
 [MIT](https://github.com/nymphium/lua-graphviz/tree/master/LICENSE)
-

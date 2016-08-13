@@ -1,14 +1,27 @@
+local function pcall_wrap(f, ...)
+	local ok, cont = pcall(f, ...)
+
+	if not ok then
+		error(cont, 2)
+	end
+
+	return cont
+end
+
 local __Graph = {
-	node = function(self,nodename, label)
+	node = function(self, nodename, label)
 		table.insert(self.nodes.node, {node =nodename, label = label})
+		return self
 	end,
 
 	edge = function(self, ...)
 		local args = {...}
 
 		for i = 2, #args do
-			table.insert(self.edges.edge, {from = args[1], to = args[i]})
+			table.insert(self.edges.edge, {prev = args[1], succ = args[i]})
 		end
+
+		return self
 	end,
 
 	source = function(self)
@@ -17,36 +30,30 @@ local __Graph = {
 			"\tnode [" .. self.nodes.style:expand() .. "]\n" ..
 			"\tedge [" .. self.edges.style:expand() .. "]\n"
 
-		node_style = self.nodes.style
-		self.nodes.style = nil
-
-		for i = 1, #self.nodes.node do
-			local n = self.nodes.node[i]
-			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(n.node, n.label)
+		local node = self.nodes.node
+		for i = 1, #node do
+			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(node[i].node, node[i].label)
 		end
 
-		self.nodes.style = node_style
-
-		edge_style = self.edges.style
-		self.edges.style = nil
-
-		edge = self.edges.edge
-
+		local edge = self.edges.edge
 		for i = 1, #edge do
-			src = src .. ("\t\t\t%s -> %s\n"):format(edge[i].from, edge[i].to)
+			src = src .. ("\t\t\t%s -> %s\n"):format(edge[i].prev, edge[i].succ)
 		end
-
-		self.edges.style = edge_style
 
 		return src .. "}"
 	end,
 
-	render = function(self, filename, format)
-		local file = assert(io.open(filename, "w+"))
-		format = format or "pdf"
+	write = function(self, filename)
+		local file = pcall_wrap(io.open, filename, "w+")
 
 		file:write(self:source())
-		assert(file:close())
+		pcall_wrap(io.close, file)
+
+		return self
+	end,
+
+	compile = function(self, filename, format, generate_filename)
+		format = format or "pdf"
 
 		if not (
 			format:match("^ps$") or
@@ -60,15 +67,38 @@ local __Graph = {
 			error("Graphviz supports the following output formats: ps, svg, fig, png, imap, and cmapx")
 		end
 
-		local cmd_str = ("dot -T%s %s -o %s.%s"):format(
+		self:write(filename)
+
+		generate_filename = generate_filename or ("%s.%s"):format(filename, format)
+
+		-- compile dot file
+		local cmd_str = ("dot -T%s %s -o %s"):format(
 			format --[[output format]],
 			filename --[[input dot file]],
-			filename, format --[[output file name(`filename.format`]])
+			generate_filename --[[output file]])
 
 		local cmd = io.popen(cmd_str, "r")
 
-		assert(cmd:read("*a"))
-		cmd:close()
+		pcall_wrap(cmd.read, cmd, "*a")
+		pcall_wrap(io.close, cmd)
+
+		return self
+	end,
+
+	render = function(self, filename, format, generate_filename)
+		format = format or "pdf"
+		generate_filename = generate_filename or ("%s.%s"):format(filename, format)
+		self:compile(filename, format, generate_filename)
+
+		-- open generated file with `xdg-open`
+		local cmd_str = ("xdg-open %s &"):format(generate_filename)
+
+		local cmd = io.popen(cmd_str, "r")
+
+		pcall_wrap(cmd.read, cmd, "*a")
+		pcall_wrap(io.close, cmd)
+
+		return self
 	end,
 }
 

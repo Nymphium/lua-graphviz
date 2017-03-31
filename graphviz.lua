@@ -1,3 +1,5 @@
+local Graph
+
 local function pcall_wrap(f, ...)
 	local ok, cont = pcall(f, ...)
 
@@ -24,8 +26,11 @@ local __Graph = {
 		return self
 	end,
 
-	source = function(self)
-		local src = "digraph {\n" ..
+	source = function(self , graphtype , graphname , level)
+		graphtype = graphtype or "digraph"
+		graphname = graphname or "defaultname"
+		level = level or 0
+		local src = graphtype .. " " .. graphname .. " {\n" ..
 			"\tgraph [" .. self.graph.style:expand() .. "]\n" ..
 			"\tnode [" .. self.nodes.style:expand() .. "]\n" ..
 			"\tedge [" .. self.edges.style:expand() .. "]\n"
@@ -35,20 +40,50 @@ local __Graph = {
 			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(node[i].node, node[i].label)
 		end
 
+		local subgraphs = self.__subgraphs
+		for subgraphname , subgraph in pairs(subgraphs) do
+			src = src .. ("\n%s\n"):format( subgraph:source("subgraph" , subgraphname , level + 1) )
+		end
+
 		local edge = self.edges.edge
 		for i = 1, #edge do
 			src = src .. ("\t\t\t%s -> %s\n"):format(edge[i].prev, edge[i].succ)
 		end
 
-		return src .. "}"
+		src = src .. "}"
+
+		--indent
+		local function split(input, delimiter)
+		    input = tostring(input)
+		    delimiter = tostring(delimiter)
+		    if (delimiter=='') then return false end
+		    local pos,arr = 0, {}
+		    -- for each divider found
+		    for st,sp in function() return string.find(input, delimiter, pos, true) end do
+		        table.insert(arr, string.sub(input, pos, st - 1))
+		        pos = sp + 1
+		    end
+		    table.insert(arr, string.sub(input, pos))
+		    return arr
+		end
+
+		local lines = split(src , "\n")
+		local indentstr = string.rep("\t\t" , level)
+		src = indentstr .. table.concat(lines , "\n" .. indentstr)
+
+		return src
 	end,
+
+	addsubgraph = function(self , subgraphname)
+		local subgraph = Graph()
+		self.__subgraphs[subgraphname] = subgraph
+		return subgraph
+	end ,
 
 	write = function(self, filename)
 		local file = pcall_wrap(io.open, filename, "w+")
-
 		file:write(self:source())
 		pcall_wrap(io.close, file)
-
 		return self
 	end,
 
@@ -124,9 +159,9 @@ local style_index = {
 }
 
 -- pseudo Graph class
-local Graph = function()
+Graph = function()
 	return setmetatable({
-		 edges = {
+		edges = {
 			 edge = {},
 			 style = setmetatable({}, {__index = style_index})},
 		nodes = {
@@ -134,6 +169,7 @@ local Graph = function()
 			style = setmetatable({}, {__index = style_index})},
 		graph = {
 			style = setmetatable({}, {__index = style_index})},
+		__subgraphs = {} ,
 	}, {__index = __Graph})
 end
 

@@ -52,7 +52,6 @@ local __Graph = {
 
 		src = src .. "}"
 
-		--indent
 		local function split(str)
 			if not str:match("\n$") then
 				str = str .. "\n"
@@ -169,7 +168,7 @@ Graph = function()
 			style = setmetatable({}, {__index = style_index})},
 		graph = {
 			style = setmetatable({}, {__index = style_index})},
-		subgraphs = {} ,
+		subgraphs = {},
 	}, {__index = __Graph})
 end
 

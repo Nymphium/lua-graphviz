@@ -1,3 +1,5 @@
+local Graph
+
 local function pcall_wrap(f, ...)
 	local ok, cont = pcall(f, ...)
 
@@ -24,8 +26,11 @@ local __Graph = {
 		return self
 	end,
 
-	source = function(self)
-		local src = "digraph {\n" ..
+	source = function(self , graphtype , graphname , level)
+		graphtype = graphtype or "digraph"
+		graphname = graphname or "defaultname"
+		level = level or 0
+		local src = graphtype .. " " .. graphname .. " {\n" ..
 			"\tgraph [" .. self.graph.style:expand() .. "]\n" ..
 			"\tnode [" .. self.nodes.style:expand() .. "]\n" ..
 			"\tedge [" .. self.edges.style:expand() .. "]\n"
@@ -35,20 +40,49 @@ local __Graph = {
 			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(node[i].node, node[i].label)
 		end
 
+		local subgraphs = self.subgraphs
+		for subgraphname , subgraph in pairs(subgraphs) do
+			src = src .. ("\n%s\n"):format( subgraph:source("subgraph" , subgraphname , level + 1) )
+		end
+
 		local edge = self.edges.edge
 		for i = 1, #edge do
 			src = src .. ("\t\t\t%s -> %s\n"):format(edge[i].prev, edge[i].succ)
 		end
 
-		return src .. "}"
+		src = src .. "}"
+
+		local function split(str)
+			if not str:match("\n$") then
+				str = str .. "\n"
+			end
+
+			local ret = {}
+
+			for w in str:gmatch("(.-)\n") do
+				table.insert(ret, w)
+			end
+
+			return ret
+		end
+
+		local lines = split(src)
+		local indentstr = string.rep("\t\t" , level)
+		src = indentstr .. table.concat(lines , "\n" .. indentstr)
+
+		return src
+	end,
+
+	subgraph = function(self , subgraphname)
+		local subgraph = Graph()
+		self.subgraphs[subgraphname] = subgraph
+		return subgraph
 	end,
 
 	write = function(self, filename)
 		local file = pcall_wrap(io.open, filename, "w+")
-
 		file:write(self:source())
 		pcall_wrap(io.close, file)
-
 		return self
 	end,
 
@@ -124,9 +158,9 @@ local style_index = {
 }
 
 -- pseudo Graph class
-local Graph = function()
+Graph = function()
 	return setmetatable({
-		 edges = {
+		edges = {
 			 edge = {},
 			 style = setmetatable({}, {__index = style_index})},
 		nodes = {
@@ -134,6 +168,7 @@ local Graph = function()
 			style = setmetatable({}, {__index = style_index})},
 		graph = {
 			style = setmetatable({}, {__index = style_index})},
+		subgraphs = {},
 	}, {__index = __Graph})
 end
 

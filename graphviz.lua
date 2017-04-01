@@ -40,7 +40,7 @@ local __Graph = {
 			src = src .. ("\t\t%s [label=\"%s\"]\n"):format(node[i].node, node[i].label)
 		end
 
-		local subgraphs = self.__subgraphs
+		local subgraphs = self.subgraphs
 		for subgraphname , subgraph in pairs(subgraphs) do
 			src = src .. ("\n%s\n"):format( subgraph:source("subgraph" , subgraphname , level + 1) )
 		end
@@ -53,32 +53,32 @@ local __Graph = {
 		src = src .. "}"
 
 		--indent
-		local function split(input, delimiter)
-		    input = tostring(input)
-		    delimiter = tostring(delimiter)
-		    if (delimiter=='') then return false end
-		    local pos,arr = 0, {}
-		    -- for each divider found
-		    for st,sp in function() return string.find(input, delimiter, pos, true) end do
-		        table.insert(arr, string.sub(input, pos, st - 1))
-		        pos = sp + 1
-		    end
-		    table.insert(arr, string.sub(input, pos))
-		    return arr
+		local function split(str)
+			if not str:match("\n$") then
+				str = str .. "\n"
+			end
+
+			local ret = {}
+
+			for w in str:gmatch("(.-)\n") do
+				table.insert(ret, w)
+			end
+
+			return ret
 		end
 
-		local lines = split(src , "\n")
+		local lines = split(src)
 		local indentstr = string.rep("\t\t" , level)
 		src = indentstr .. table.concat(lines , "\n" .. indentstr)
 
 		return src
 	end,
 
-	addsubgraph = function(self , subgraphname)
+	subgraph = function(self , subgraphname)
 		local subgraph = Graph()
-		self.__subgraphs[subgraphname] = subgraph
+		self.subgraphs[subgraphname] = subgraph
 		return subgraph
-	end ,
+	end,
 
 	write = function(self, filename)
 		local file = pcall_wrap(io.open, filename, "w+")
@@ -169,7 +169,7 @@ Graph = function()
 			style = setmetatable({}, {__index = style_index})},
 		graph = {
 			style = setmetatable({}, {__index = style_index})},
-		__subgraphs = {} ,
+		subgraphs = {} ,
 	}, {__index = __Graph})
 end
 

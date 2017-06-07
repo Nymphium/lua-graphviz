@@ -1,5 +1,15 @@
 local Graph
 
+local supported_ext = {
+	ps = true,
+	svg = true,
+	fig = true,
+	png = true,
+	imap = true,
+	cmapx = true,
+	pdf = true
+}
+
 local function pcall_wrap(f, ...)
 	local ok, cont = pcall(f, ...)
 
@@ -89,16 +99,19 @@ local __Graph = {
 	compile = function(self, filename, format, generate_filename)
 		format = format or "pdf"
 
-		if not (
-			format:match("^ps$") or
-			format:match("^svg$") or
-			format:match("^fig$") or
-			format:match("^png$") or
-			format:match("^imap$") or
-			format:match("^cmapx$") or
-			format:match("^pdf$")) then
+		if not supported_ext[format] then
+			local format_aligned = {}
 
-			error("Graphviz supports the following output formats: ps, svg, fig, png, imap, and cmapx")
+			for fmt in pairs(supported_ext) do
+				table.insert(format_aligned, fmt)
+			end
+
+			local flen = #format_aligned
+
+			table.sort(format_aligned)
+
+			error(("Graphviz supports the following output formats: %s, and %s (got `%s')"):format(
+				table.concat(format_aligned, ", ", 1, flen - 1), format_aligned[flen], format))
 		end
 
 		self:write(filename)
@@ -161,8 +174,8 @@ local style_index = {
 Graph = function()
 	return setmetatable({
 		edges = {
-			 edge = {},
-			 style = setmetatable({}, {__index = style_index})},
+			edge = {},
+			style = setmetatable({}, {__index = style_index})},
 		nodes = {
 			node = {},
 			style = setmetatable({}, {__index = style_index})},

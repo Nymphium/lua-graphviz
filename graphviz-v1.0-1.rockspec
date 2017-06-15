@@ -1,5 +1,5 @@
 package = "graphviz"
-version = "v1.0-1"
+version = "v1.0-2"
 source = {
 	url = "git://github.com/nymphium/lua-graphviz"
 }
